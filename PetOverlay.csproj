@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <AssemblyName>TheCompletionist</AssemblyName>
+    <RootNamespace>PetOverlay</RootNamespace>
+    <Version>2.0.0</Version>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <AllowedReferenceRelatedFileExtensions>.pdb</AllowedReferenceRelatedFileExtensions>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Offline game data (pets, maps, spawns, cubes, timers): the app works without aion2maps.com. -->
+    <!-- Not in git (aion2maps data): built locally; without it the app downloads everything on first start. -->
+    <EmbeddedResource Include="data\snapshot.zip" LogicalName="snapshot.zip" Condition="Exists('data\snapshot.zip')" />
+    <Compile Remove="tools\**;web\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+  </ItemGroup>
+
+  <!-- The UI (web/, React + Vite) is built into ui\ and embedded. Items are added inside the target, after the build
+       produced the files (a static glob would be evaluated before ui\ exists). SkipWebBuild=true reuses ui\ as is. -->
+  <Target Name="BuildWebUi" BeforeTargets="BeforeBuild">
+    <Exec Condition="'$(SkipWebBuild)' != 'true'" Command="npm run build" WorkingDirectory="web" />
+    <Error Condition="!Exists('ui\index.html')" Text="ui\index.html fehlt: npm install in web\ ausfuehren und neu bauen." />
+    <ItemGroup>
+      <_WebUi Include="ui\*" />
+      <EmbeddedResource Include="@(_WebUi)" LogicalName="ui/%(_WebUi.Filename)%(_WebUi.Extension)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
